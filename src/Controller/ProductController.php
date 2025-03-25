@@ -52,6 +52,7 @@ final class ProductController extends AbstractController
         return new JsonResponse([
             "message" => "Produit ajouté et log enregistré !",
             "data" => [
+                "id" => $product->getId(),
                 "product" => $product->getName(),
                 "price" => $product->getPrice(),
                 "description" => $product->getDescription(),
