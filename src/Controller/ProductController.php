@@ -8,9 +8,11 @@ use App\Event\ProductAddedEvent;
 use App\Event\ProductRemovedEvent;
 use App\Event\ProductUpdatedEvent;
 use Doctrine\ORM\EntityManagerInterface;
+use App\Exception\ProductNotFoundException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 
@@ -52,12 +54,12 @@ final class ProductController extends AbstractController
     
     
     #[Route('/edit-product/{id}', name: 'product_edit')]
-    public function edit(Request $request, Product $product, EntityManagerInterface $entityManager, EventDispatcherInterface $dispatcher)
+    public function edit(Request $request, Product $product = null, EntityManagerInterface $entityManager, EventDispatcherInterface $dispatcher)
     {
         if (!$product) {
-            return new Response('Produit non trouvé', 404);
+            throw new ProductNotFoundException('Produit non trouvé');
         }
-        
+
         $form = $this->createForm(ProductType::class, $product);
 
         $form->handleRequest($request);
