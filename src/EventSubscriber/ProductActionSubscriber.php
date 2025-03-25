@@ -3,26 +3,29 @@
 namespace App\EventSubscriber;
 
 use Psr\Log\LoggerInterface;
+use App\Service\EmailService;
 use App\Entity\ProductEventLog;
+use App\Event\ProductAddedEvent;
 use Symfony\Component\Mime\Email;
+use App\Event\ProductRemovedEvent;
+use App\Event\ProductUpdatedEvent;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use App\Event\ProductAddedEvent;
-use App\Event\ProductUpdatedEvent;
-use App\Event\ProductRemovedEvent;
 
 class ProductActionSubscriber implements EventSubscriberInterface
 {
     private EntityManagerInterface $entityManager;
     private MailerInterface $mailer;
     private LoggerInterface $logger;
+    private EmailService $emailService;
 
-    public function __construct(MailerInterface $mailer, LoggerInterface $logger, EntityManagerInterface $entityManager)
+    public function __construct(MailerInterface $mailer, LoggerInterface $logger, EntityManagerInterface $entityManager, EmailService $emailService)
     {
         $this->entityManager = $entityManager;
         $this->mailer = $mailer;
         $this->logger = $logger;
+        $this->emailService = $emailService;
     }
 
     public static function getSubscribedEvents(): array
@@ -65,13 +68,6 @@ class ProductActionSubscriber implements EventSubscriberInterface
         $this->entityManager->persist($productEventLog);
         $this->entityManager->flush();
 
-        // Envoi d'un e-mail
-        $email = (new Email())
-            ->from('admin@shop.com')
-            ->to('admin@shop.com')
-            ->subject("Produit $action")
-            ->text($message);
-
-        $this->mailer->send($email);
+        $this->emailService->sendProductNotification("Produit $action", $message);
     }
 }
