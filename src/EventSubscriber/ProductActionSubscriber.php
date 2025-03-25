@@ -4,13 +4,13 @@ namespace App\EventSubscriber;
 
 use Psr\Log\LoggerInterface;
 use App\Entity\ProductEventLog;
-use App\Event\ProductAddedEvent;
 use Symfony\Component\Mime\Email;
-use App\Event\ProductRemovedEvent;
-use App\Event\ProductUpdatedEvent;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use App\Event\ProductAddedEvent;
+use App\Event\ProductUpdatedEvent;
+use App\Event\ProductRemovedEvent;
 
 class ProductActionSubscriber implements EventSubscriberInterface
 {
@@ -36,42 +36,32 @@ class ProductActionSubscriber implements EventSubscriberInterface
 
     public function onProductAdded(ProductAddedEvent $event)
     {
-        // Récupérer le produit
-        $product = $event->getProduct();
-
-        // Log l'ajout du produit
-        $this->logger->info('Un nouveau produit a été ajouté : ' . $product->getName());
-
-        $productEventLog = new ProductEventLog(
-            'product.added',
-            'Le produit "' . $product->getName() . '" a été modifié en BDD.'
-        );
-
-        $this->entityManager->persist($productEventLog);
-        $this->entityManager->flush();
-
-        // Envoyer l'e-mail
-        $email = (new Email())
-            ->from('admin@shop.com')
-            ->to('admin@shop.com')
-            ->subject('Nouveau produit ajouté')
-            ->text('Le produit "' . $product->getName() . '" a été ajouté.');
-
-        $this->mailer->send($email);
+        $this->handleProductEvent($event->getProduct(), 'added', 'ajouté');
     }
 
     public function onProductUpdated(ProductUpdatedEvent $event)
     {
-        $product = $event->getProduct();
+        $this->handleProductEvent($event->getProduct(), 'updated', 'mis à jour');
+    }
 
-        // Log de mise à jour
-        $this->logger->info('Produit mis à jour : ' . $product->getName());
+    public function onProductRemoved(ProductRemovedEvent $event)
+    {
+        $this->handleProductEvent($event->getProduct(), 'removed', 'supprimé');
+    }
 
-        $productEventLog = new ProductEventLog(
-            'product.updated',
-            'Le produit "' . $product->getName() . '" a été modifié en BDD.'
-        );
+    private function handleProductEvent($product, string $eventType, string $action)
+    {
+        $eventKey = "product.$eventType";
+        $message = "Le produit \"{$product->getName()}\" a été $action en BDD.\n";
+        $message .= "Son prix est de {$product->getPrice()} €.\n";
+        $message .= "Description : {$product->getDescription()}.\n";
+        $message .= "Date de création : {$product->getCreatedAt()->format('d/m/Y H:i:s')}.";
 
+        // Log l'événement
+        $this->logger->info($message);
+
+        // Sauvegarde en base de données
+        $productEventLog = new ProductEventLog($eventKey, $message);
         $this->entityManager->persist($productEventLog);
         $this->entityManager->flush();
 
@@ -79,34 +69,8 @@ class ProductActionSubscriber implements EventSubscriberInterface
         $email = (new Email())
             ->from('admin@shop.com')
             ->to('admin@shop.com')
-            ->subject('Produit mis à jour')
-            ->text('Le produit "' . $product->getName() . '" a été mis à jour.');
-
-        $this->mailer->send($email);
-    }
-
-    public function onProductRemoved(ProductRemovedEvent $event)
-    {
-        // Récupérer le produit
-        $product = $event->getProduct();
-
-        // Log la suppression du produit
-        $this->logger->info('Produit supprimé : ' . $product->getName());
-
-        $productEventLog = new ProductEventLog(
-            'product.removed',
-            'Le produit "' . $product->getName() . '" a été supprimé de la BDD.'
-        );
-
-        $this->entityManager->persist($productEventLog);
-        $this->entityManager->flush();
-
-        // Envoyer l'e-mail
-        $email = (new Email())
-            ->from('admin@shop.com')
-            ->to('admin@shop.com')
-            ->subject('Produit supprimé')
-            ->text('Le produit "' . $product->getName() . '" a été supprimé.');
+            ->subject("Produit $action")
+            ->text($message);
 
         $this->mailer->send($email);
     }
