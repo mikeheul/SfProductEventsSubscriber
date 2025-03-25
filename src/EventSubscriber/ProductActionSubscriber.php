@@ -80,8 +80,9 @@ class ProductActionSubscriber implements EventSubscriberInterface
         $this->entityManager->flush();
 
         // Envoi de l'e-mail avec le PDF
+        $subject = "Produit $action : " . $product->getName();
         $this->emailService->sendProductNotification(
-            "Produit $action",
+            $subject,
             $message,
             'admin@shop.com',
             $pdfPath
