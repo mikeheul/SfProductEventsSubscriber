@@ -54,6 +54,10 @@ final class ProductController extends AbstractController
     #[Route('/edit-product/{id}', name: 'product_edit')]
     public function edit(Request $request, Product $product, EntityManagerInterface $entityManager, EventDispatcherInterface $dispatcher)
     {
+        if (!$product) {
+            return new Response('Produit non trouvé', 404);
+        }
+        
         $form = $this->createForm(ProductType::class, $product);
 
         $form->handleRequest($request);
