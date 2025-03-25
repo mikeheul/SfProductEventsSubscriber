@@ -27,7 +27,7 @@ final class ProductController extends AbstractController
     }
 
     #[Route('/add-product', name: 'product_add')]
-    public function addProduct(EntityManagerInterface $entityManager, EventDispatcherInterface $dispatcher): Response
+    public function addProduct(EntityManagerInterface $entityManager, EventDispatcherInterface $dispatcher): JsonResponse
     {
         $productNames = [
             'Télévision', 'Smartphone', 'Ordinateur portable', 'Casque audio', 'Montre connectée', 
@@ -49,7 +49,15 @@ final class ProductController extends AbstractController
         
         $dispatcher->dispatch(new ProductAddedEvent($product), ProductAddedEvent::NAME);
         
-        return new Response('Produit ajouté et log enregistré !');
+        return new JsonResponse([
+            "message" => "Produit ajouté et log enregistré !",
+            "data" => [
+                "product" => $product->getName(),
+                "price" => $product->getPrice(),
+                "description" => $product->getDescription(),
+                "createdAt" => $product->getCreatedAt()->format('d/m/Y H:i:s')
+            ]
+        ]);
     }
     
     
@@ -78,7 +86,7 @@ final class ProductController extends AbstractController
     }
 
     #[Route('/remove-product/{id}', name: 'product_remove')]
-    public function removeProduct(int $id, EntityManagerInterface $entityManager, EventDispatcherInterface $dispatcher): Response
+    public function removeProduct(int $id, EntityManagerInterface $entityManager, EventDispatcherInterface $dispatcher): JsonResponse
     {
         $product = $entityManager->getRepository(Product::class)->find($id);
         
@@ -91,6 +99,14 @@ final class ProductController extends AbstractController
 
         $dispatcher->dispatch(new ProductRemovedEvent($product), ProductRemovedEvent::NAME);
 
-        return new Response('Produit supprimé et log enregistré !');
+        return new JsonResponse([
+            "message" => "Produit supprimé et log enregistré !",
+            "data" => [
+                "product" => $product->getName(),
+                "price" => $product->getPrice(),
+                "description" => $product->getDescription(),
+                "createdAt" => $product->getCreatedAt()->format('d/m/Y H:i:s')
+            ],
+        ]);
     }
 }
