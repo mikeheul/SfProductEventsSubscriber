@@ -60,10 +60,8 @@ class ProductActionSubscriber implements EventSubscriberInterface
         $message .= "Description : {$product->getDescription()}.\n";
         $message .= "Date de création : {$product->getCreatedAt()->format('d/m/Y H:i:s')}.";
 
-        // Log l'événement
         $this->logger->info($message);
 
-        // Sauvegarde en base de données
         $productEventLog = new ProductEventLog($eventKey, $message);
         $this->entityManager->persist($productEventLog);
         $this->entityManager->flush();
