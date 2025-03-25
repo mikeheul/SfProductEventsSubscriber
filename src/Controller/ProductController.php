@@ -65,7 +65,6 @@ final class ProductController extends AbstractController
         ]);
     }
     
-    
     #[Route('/edit-product/{id}', name: 'product_edit')]
     public function edit(Request $request, Product $product = null, EntityManagerInterface $entityManager, EventDispatcherInterface $dispatcher)
     {
@@ -86,8 +85,6 @@ final class ProductController extends AbstractController
         return $this->render('product/edit.html.twig', [
             'formEditProduct' => $form,
         ]);
-        
-        // return new Response('Produit modifié et log enregistré !');
     }
 
     #[Route('/remove-product/{id}', name: 'product_remove')]
