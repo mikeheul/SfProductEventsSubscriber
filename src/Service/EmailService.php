@@ -14,13 +14,21 @@ class EmailService
         $this->mailer = $mailer;
     }
 
-    public function sendProductNotification(string $subject, string $message, string $to = 'admin@shop.com')
+    public function sendProductNotification(
+        string $subject, 
+        string $message, 
+        string $to = 'admin@shop.com',
+        string $pdfPath = null)
     {
         $email = (new Email())
             ->from('admin@shop.com')
             ->to($to)
             ->subject($subject)
             ->text($message);
+
+        if ($pdfPath && file_exists($pdfPath)) {
+            $email->attachFromPath($pdfPath);
+        }
 
         $this->mailer->send($email);
     }

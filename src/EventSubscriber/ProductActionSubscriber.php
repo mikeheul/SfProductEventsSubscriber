@@ -6,26 +6,29 @@ use Psr\Log\LoggerInterface;
 use App\Service\EmailService;
 use App\Entity\ProductEventLog;
 use App\Event\ProductAddedEvent;
-use Symfony\Component\Mime\Email;
 use App\Event\ProductRemovedEvent;
 use App\Event\ProductUpdatedEvent;
+use App\Service\PdfGeneratorService;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 class ProductActionSubscriber implements EventSubscriberInterface
 {
     private EntityManagerInterface $entityManager;
-    private MailerInterface $mailer;
     private LoggerInterface $logger;
     private EmailService $emailService;
+    private PdfGeneratorService $pdfGenerator;
 
-    public function __construct(MailerInterface $mailer, LoggerInterface $logger, EntityManagerInterface $entityManager, EmailService $emailService)
-    {
+    public function __construct(
+        EntityManagerInterface $entityManager,
+        LoggerInterface $logger,
+        EmailService $emailService,
+        PdfGeneratorService $pdfGenerator
+    ) {
         $this->entityManager = $entityManager;
-        $this->mailer = $mailer;
         $this->logger = $logger;
         $this->emailService = $emailService;
+        $this->pdfGenerator = $pdfGenerator;
     }
 
     public static function getSubscribedEvents(): array
@@ -54,18 +57,34 @@ class ProductActionSubscriber implements EventSubscriberInterface
 
     private function handleProductEvent($product, string $eventType, string $action)
     {
-        $eventKey = "product.$eventType";
-        $message = "Le produit \"{$product->getName()}\" a été $action en BDD.\n";
-        $message .= "Son prix est de {$product->getPrice()} €.\n";
-        $message .= "Description : {$product->getDescription()}.\n";
-        $message .= "Date de création : {$product->getCreatedAt()->format('d/m/Y H:i:s')}.";
+        // Génération du PDF
+        $pdfPath = $this->pdfGenerator->generateProductPdf($product);
+        $this->logger->info("PDF généré : " . $pdfPath);
 
+        // Création du message de log
+        $message = sprintf(
+            "Le produit \"%s\" a été %s en BDD.\nPrix : %.2f €\nDescription : %s\nDate de création : %s.",
+            $product->getName(),
+            $action,
+            $product->getPrice(),
+            $product->getDescription(),
+            $product->getCreatedAt()->format('d/m/Y H:i:s')
+        );
+
+        // Log de l'événement
         $this->logger->info($message);
 
-        $productEventLog = new ProductEventLog($eventKey, $message);
+        // Enregistrement en base de données
+        $productEventLog = new ProductEventLog("product.$eventType", $message);
         $this->entityManager->persist($productEventLog);
         $this->entityManager->flush();
 
-        $this->emailService->sendProductNotification("Produit $action", $message);
+        // Envoi de l'e-mail avec le PDF
+        $this->emailService->sendProductNotification(
+            "Produit $action",
+            $message,
+            'admin@shop.com',
+            $pdfPath
+        );
     }
 }
