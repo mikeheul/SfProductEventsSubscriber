@@ -11,7 +11,7 @@ class PdfGeneratorService
 {
     private string $pdfDirectory;
 
-    public function __construct(string $pdfDirectory = '/public/pdf')
+    public function __construct(string $pdfDirectory = "pdf")
     {
         $this->pdfDirectory = $pdfDirectory;
     }
