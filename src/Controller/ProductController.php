@@ -7,6 +7,7 @@ use App\Form\ProductType;
 use App\Event\ProductAddedEvent;
 use App\Event\ProductRemovedEvent;
 use App\Event\ProductUpdatedEvent;
+use App\Repository\ProductRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use App\Exception\ProductNotFoundException;
 use Symfony\Component\HttpFoundation\Request;
@@ -19,11 +20,14 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 final class ProductController extends AbstractController
 {
     #[Route('/product', name: 'app_product')]
-    public function index(): Response
+    public function index(ProductRepository $pr): Response
     {
-        return $this->render('product/index.html.twig', [
-            'controller_name' => 'ProductController',
-        ]);
+        $products = $pr->findBy([], ['createdAt' => 'DESC']);
+        return $this->json($products, 200, [], ['groups' => 'product:read']);
+
+        // return $this->render('product/index.html.twig', [
+        //     'products' => json_encode($products),
+        // ]);
     }
 
     #[Route('/add-product', name: 'product_add')]
